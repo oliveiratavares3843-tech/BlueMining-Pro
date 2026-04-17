@@ -1,77 +1,97 @@
 import streamlit as st
 import hashlib
 import json
-import requests
-from time import time
+import time
 
-# --- LOGICA DA BLOCKCHAIN ---
+# --- CONFIGURAÇÃO DA PÁGINA E TEMA ---
+st.set_page_config(page_title="BlueChain Mining", page_icon="⛏️", layout="centered")
+
+# --- LÓGICA DA BLOCKCHAIN CENTRALIZADA ---
 class BlueChain:
     def __init__(self):
         self.chain = []
+        # Criar o Bloco Gênese (Primeiro bloco da rede)
         self.create_block(proof=100, previous_hash='0000000000000000')
 
     def create_block(self, proof, previous_hash):
         block = {
             'index': len(self.chain) + 1,
-            'timestamp': time(),
+            'timestamp': time.time(),
             'proof': proof,
             'previous_hash': previous_hash,
-            'reward': 50 
+            'reward': 50  # Quantidade de Satoshis ganhos por bloco
         }
         self.chain.append(block)
         return block
 
     def hash(self, block):
+        # Gera o Hash SHA-256 do bloco
         encoded_block = json.dumps(block, sort_keys=True).encode()
         return hashlib.sha256(encoded_block).hexdigest()
 
-# Inicializa o estado do App
+# Inicializar a Blockchain na memória do navegador
 if 'blockchain' not in st.session_state:
     st.session_state.blockchain = BlueChain()
     st.session_state.saldo_sats = 0
 
-# --- INTERFACE VISUAL ---
+# --- INTERFACE VISUAL (STREAMLIT) ---
 st.title("⛏️ BlueChain Mining System")
+st.write("Sistema de Mineração Centralizado conectado à **Wallet of Satoshi**.")
 
-# Painel de Saldo em destaque
-st.subheader(f"Carteira: {st.session_state.saldo_sats} SATS")
-
-# Botão de Mineração (Aumenta o saldo)
-if st.button("🚀 CLIQUE PARA MINERAR", use_container_width=True):
-    bc = st.session_state.blockchain
-    ultimo_bloco = bc.chain[-1]
-    hash_anterior = bc.hash(ultimo_bloco)
-    novo_bloco = bc.create_block(proof=ultimo_bloco['proof'] + 1, previous_hash=hash_anterior)
-    
-    st.session_state.saldo_sats += 50
-    st.success(f"Bloco #{novo_bloco['index']} minerado! +50 Satoshis na conta.")
+# Painel de Status
+col1, col2 = st.columns(2)
+with col1:
+    st.metric(label="Meu Saldo", value=f"{st.session_state.saldo_sats} SATS")
+with col2:
+    st.metric(label="Blocos Minerados", value=len(st.session_state.blockchain.chain) - 1)
 
 st.divider()
 
-# --- SEÇÃO DE ENVIO ---
-st.subheader("📲 Enviar Satoshis para BlueWallet")
+# --- ÁREA DE MINERAÇÃO ---
+st.subheader("Trabalho de Mineração")
+if st.button("🚀 INICIAR MINERAÇÃO", use_container_width=True, type="secondary"):
+    with st.status("Minerando na rede BlueChain...", expanded=True) as status:
+        st.write("Resolvendo desafio matemático...")
+        time.sleep(1.5)
+        st.write("Assinando bloco com Hash SHA-256...")
+        
+        bc = st.session_state.blockchain
+        ultimo_bloco = bc.chain[-1]
+        hash_anterior = bc.hash(ultimo_bloco)
+        novo_bloco = bc.create_block(proof=ultimo_bloco['proof'] + 1, previous_hash=hash_anterior)
+        
+        st.session_state.saldo_sats += novo_bloco['reward']
+        status.update(label="Mineração concluída!", state="complete", expanded=False)
+    
+    st.success(f"Parabéns! Você minerou o bloco #{novo_bloco['index']} e ganhou 50 Satoshis.")
 
-# Campos de entrada
-endereco_wallet = st.text_input("Endereço da sua BlueWallet (Lightning ou BTC):", placeholder="bc1... ou lnbc...")
-valor_para_enviar = st.number_input("Quantidade para enviar:", min_value=0, step=1)
+st.divider()
 
-# O BOTÃO DE ENVIO
-if st.button("📤 ENVIAR AGORA", type="primary", use_container_width=True):
-    if st.session_state.saldo_sats <= 100:
-        st.error("Você não tem saldo para enviar! Minere alguns blocos primeiro.")
-    elif valor_para_enviar <= 100:
-        st.warning("Insira um valor maior que zero.")
-    elif valor_para_enviar > st.session_state.saldo_sats:
-        st.error("Saldo insuficiente para esta transferência.")
-    elif not endereco_wallet:
-        st.warning("Por favor, insira o endereço da sua carteira.")
+# --- ÁREA DE ENVIO (WALLET OF SATOSHI) ---
+st.subheader("📤 Enviar para Wallet of Satoshi")
+st.write("Envie seus ganhos para o seu Lightning Address.")
+
+# Input do endereço (Ex: voce@walletofsatoshi.com)
+wos_address = st.text_input("Seu endereço Wallet of Satoshi:", placeholder="exemplo@walletofsatoshi.com")
+valor_saque = st.number_input("Quantidade para sacar (SATS):", min_value=0, max_value=st.session_state.saldo_sats, step=10)
+
+if st.button("ENVIAR AGORA", type="primary", use_container_width=True):
+    if not wos_address:
+        st.warning("nearquality49@walletofsatoshi.com")
+    elif valor_saque <= 0:
+        st.error("Insira um valor válido para o saque.")
     else:
-        # Lógica de sucesso simulada
-        st.session_state.saldo_sats -= valor_para_enviar
-        st.balloons() # Efeito de festa na tela
-        st.success(f"Sucesso! {valor_para_enviar} Satoshis enviados para {endereco_wallet}")
-        st.info("Nota: Em uma rede real, a transação seria enviada para a LndHub da BlueWallet.")
+        with st.spinner("Processando transação via Lightning Network..."):
+            # Simulando a chamada de API de pagamento
+            time.sleep(2)
+            st.session_state.saldo_sats -= valor_saque
+            st.balloons()
+            st.success(f"Sucesso! {valor_saque} SATS enviados para {wos_address}")
+            st.info("As transações na rede real dependem de liquidez na sua API de pagamento (LNbits/OpenNode).")
 
-# Rodapé com histórico
-if st.checkbox("Mostrar Histórico da Blockchain"):
+# --- HISTÓRICO DA REDE ---
+st.divider()
+with st.expander("🔍 Detalhes Técnicos da Blockchain"):
     st.json(st.session_state.blockchain.chain)
+
+st.caption("BlueChain Mining v1.0 - Desenvolvido em Python")
