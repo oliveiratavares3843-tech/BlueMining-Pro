@@ -95,3 +95,30 @@ with st.expander("🔍 Detalhes Técnicos da Blockchain"):
     st.json(st.session_state.blockchain.chain)
 
 st.caption("BlueChain Mining v1.0 - Desenvolvido em Python")
+# --- ADICIONE ISSO AO FINAL DO ARQUIVO ---
+
+def processar_saque_real(invoice_destino):
+    # Aqui você usará a chave da API que conseguir (Blink ou LNbits)
+    URL_API = "URL_DA_API_AQUI"
+    CHAVE = "SUA_CHAVE_AQUI"
+    
+    headers = {"X-Api-Key": CHAVE, "Content-Type": "application/json"}
+    payload = {"out": True, "bolt11": invoice_destino}
+    
+    print("Conectando à rede Lightning para confirmar envio...")
+    
+    try:
+        response = requests.post(URL_API, json=payload, headers=headers)
+        if response.status_code == 201 or response.status_code == 200:
+            print("✅ SUCESSO: Os Satoshis saíram do sistema para a Wallet of Satoshi!")
+        else:
+            print(f"❌ FALHA: A rede recusou o envio. Erro: {response.text}")
+    except Exception as e:
+        print(f"⚠️ ERRO DE CONEXÃO: {e}")
+
+# Exemplo de como você chamaria isso no seu sistema:
+# saldo_atual = 250
+# if saldo_atual >= 250:
+#     fatura = input("Digite a Invoice para receber seus 250 SATS: ")
+#     processar_saque_real(fatura)
+
